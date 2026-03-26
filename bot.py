@@ -64,6 +64,8 @@ scheduler.add_job(send_daily, 'cron', hour=6)   # morning
 scheduler.add_job(send_daily, 'cron', hour=18)  # evening
 scheduler.start()
 
+send_daily()
+
 # ----------------------------
 # Run Bot
 # ----------------------------
