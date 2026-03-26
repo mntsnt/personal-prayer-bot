@@ -1,4 +1,5 @@
 import random
+import os
 import requests
 from telegram import Bot, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
