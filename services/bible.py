@@ -52,19 +52,13 @@ def get_random_verse():
     try:
         random_verse = _fetch_random_verse()
     except Exception:
-        return "📖 Unable to fetch chapter right now."
+        return "📖 Unable to fetch verse right now."
 
     reference = random_verse.get('reference')
-    if not reference:
-        return "📖 Unable to fetch chapter right now."
+    text = random_verse.get('text', '').strip()
+    if not reference or not text:
+        return "📖 Unable to fetch verse right now."
 
-    try:
-        english = _fetch_chapter(reference)
-    except Exception:
-        return "📖 Unable to fetch chapter right now."
-
-    eng_text = english.get('text', '')
-
-    message = f"📖 {reference}\n{eng_text}"
+    message = f"📖 {reference}\n{text}"
 
     return message
