@@ -46,11 +46,10 @@ def get_random_song():
     last_song = song
 
     title = song.get('title', 'Unknown Title')
-    artist = song.get('artist', 'Unknown')
+    singer = song.get('singer', song.get('album', 'Unknown'))
     album = song.get('album', 'Unknown')
-    path = song.get('file_path', '')
 
-    return f"🎵 {title}\n👤 {artist}\n💿 {album}\n📁 {path}"
+    return f"🎵 {title}\n👤 {singer}\n💿 {album}"
 
 # ----------------------------
 # Bible Verse Logic
