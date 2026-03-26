@@ -1,6 +1,9 @@
 import random
 import requests
 import logging
+import pytz
+
+from datetime import time
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -12,12 +15,15 @@ from config import TOKEN, CHAT_ID
 from songs_list import songs
 
 # ----------------------------
-# Logging (important for debugging)
+# Logging
 # ----------------------------
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
 
 # ----------------------------
-# Random Song Function
+# Random Song Logic
 # ----------------------------
 last_song = None
 
@@ -32,7 +38,7 @@ def get_random_song():
     return f"🎵 {song}"
 
 # ----------------------------
-# Bible Verse Function
+# Bible Verse Logic
 # ----------------------------
 def get_random_verse():
     try:
@@ -45,26 +51,43 @@ def get_random_verse():
         return f"📖 {reference}\n{verse}"
 
     except Exception as e:
-        logging.error(f"Verse error: {e}")
-        return "📖 Could not fetch verse."
+        logging.error(f"Verse fetch error: {e}")
+        return "📖 Unable to fetch verse right now."
 
 # ----------------------------
-# Daily Message Sender
+# Daily Message Function
 # ----------------------------
-async def send_daily(context: ContextTypes.DEFAULT_TYPE):
-    logging.info("Running scheduled task...")
+async def send_morning(context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Sending morning message...")
 
     verse = get_random_verse()
     song = get_random_song()
 
     message = f"""
-☀️ Daily Message
+☀️ Good Morning
 
 {verse}
 
+🎧 Worship:
 {song}
 """
+    await context.bot.send_message(chat_id=CHAT_ID, text=message)
 
+
+async def send_evening(context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Sending evening message...")
+
+    verse = get_random_verse()
+    song = get_random_song()
+
+    message = f"""
+🌙 Good Evening
+
+{verse}
+
+🎧 Worship:
+{song}
+"""
     await context.bot.send_message(chat_id=CHAT_ID, text=message)
 
 # ----------------------------
@@ -80,7 +103,7 @@ async def song_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_random_song())
 
 # ----------------------------
-# Main Function
+# Main App
 # ----------------------------
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
@@ -91,20 +114,23 @@ def main():
     app.add_handler(CommandHandler("song", song_command))
 
     # ----------------------------
-    # Scheduler (JobQueue)
+    # Scheduler (Addis Ababa Timezone)
     # ----------------------------
+    tz = pytz.timezone("Africa/Addis_Ababa")
 
-    # 🔥 TEST MODE (every 1 minute)
-    app.job_queue.run_repeating(send_daily, interval=60, first=10)
+    # Morning at 6:00 AM
+    app.job_queue.run_daily(
+        send_morning,
+        time=time(hour=6, minute=0, tzinfo=tz)
+    )
 
-    # ✅ PRODUCTION MODE (uncomment later)
-    # app.job_queue.run_daily(send_daily, time=time(hour=6, minute=0))
-    # app.job_queue.run_daily(send_daily, time=time(hour=18, minute=0))
+    # Evening at 6:00 PM
+    app.job_queue.run_daily(
+        send_evening,
+        time=time(hour=18, minute=0, tzinfo=tz)
+    )
 
-    # ----------------------------
-    # Run Bot
-    # ----------------------------
-    logging.info("Bot started...")
+    logging.info("Bot started successfully...")
     app.run_polling()
 
 # ----------------------------
