@@ -1,22 +1,33 @@
 import random
-import os
 import requests
-from telegram import Bot, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from apscheduler.schedulers.background import BackgroundScheduler
-from config import TOKEN, CHAT_ID
+import logging
+from telegram import Update
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes
+)
 
-# Import songs from another Python file
-from songs_list import songs, last_song
+from config import TOKEN, CHAT_ID
+from songs_list import songs
+
+# ----------------------------
+# Logging (important for debugging)
+# ----------------------------
+logging.basicConfig(level=logging.INFO)
 
 # ----------------------------
 # Random Song Function
 # ----------------------------
+last_song = None
+
 def get_random_song():
     global last_song
     song = random.choice(songs)
+
     while song == last_song:
         song = random.choice(songs)
+
     last_song = song
     return f"🎵 {song}"
 
@@ -27,33 +38,38 @@ def get_random_verse():
     try:
         res = requests.get("https://bible-api.com/?random=verse")
         data = res.json()
+
         verse = data["text"].strip()
         reference = data["reference"]
+
         return f"📖 {reference}\n{verse}"
-    except:
-        return "📖 Could not fetch verse. Check your connection."
+
+    except Exception as e:
+        logging.error(f"Verse error: {e}")
+        return "📖 Could not fetch verse."
 
 # ----------------------------
-# Daily Message
+# Daily Message Sender
 # ----------------------------
-# def send_daily():
-#     verse = get_random_verse()
-#     song = get_random_song()
-#     message = f"☀️ Daily Message\n\n{verse}\n\n{song}"
-#     bot.send_message(chat_id=CHAT_ID, text=message)
+async def send_daily(context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Running scheduled task...")
 
-def send_daily():
-    print("Scheduler is running...")  # 👈 Add this
     verse = get_random_verse()
     song = get_random_song()
-    message = f"☀️ Daily Message\n\n{verse}\n\n{song}"
-    bot.send_message(chat_id=CHAT_ID, text=message)
+
+    message = f"""
+☀️ Daily Message
+
+{verse}
+
+{song}
+"""
+
+    await context.bot.send_message(chat_id=CHAT_ID, text=message)
 
 # ----------------------------
-# Telegram Commands
+# Commands
 # ----------------------------
-bot = Bot(token=TOKEN)
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Bot is running ✅")
 
@@ -64,26 +80,35 @@ async def song_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_random_song())
 
 # ----------------------------
-# Scheduler (Morning & Evening)
+# Main Function
 # ----------------------------
-scheduler = BackgroundScheduler()
-# scheduler.add_job(send_daily, 'cron', hour=6)   # morning
-# scheduler.add_job(send_daily, 'cron', hour=18)  # evening
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()
 
-scheduler.add_job(send_daily, 'interval', minutes=1)
+    # Commands
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("verse", verse_command))
+    app.add_handler(CommandHandler("song", song_command))
 
-scheduler.start()
+    # ----------------------------
+    # Scheduler (JobQueue)
+    # ----------------------------
 
-send_daily()
+    # 🔥 TEST MODE (every 1 minute)
+    app.job_queue.run_repeating(send_daily, interval=60, first=10)
+
+    # ✅ PRODUCTION MODE (uncomment later)
+    # app.job_queue.run_daily(send_daily, time=time(hour=6, minute=0))
+    # app.job_queue.run_daily(send_daily, time=time(hour=18, minute=0))
+
+    # ----------------------------
+    # Run Bot
+    # ----------------------------
+    logging.info("Bot started...")
+    app.run_polling()
 
 # ----------------------------
-# Run Bot
+# Entry Point
 # ----------------------------
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("verse", verse_command))
-app.add_handler(CommandHandler("song", song_command))
-app.run_polling()
-
-
-scheduler.add_job(send_daily, 'interval', minutes=1)
+if __name__ == "__main__":
+    main()
