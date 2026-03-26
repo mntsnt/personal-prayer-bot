@@ -64,7 +64,7 @@ def get_random_song():
     singer = song.get('singer', song.get('album', 'Unknown'))
     album = song.get('album', 'Unknown')
 
-    return f"🎵 {title}\n👤 {singer}\n💿 {album}"
+    return f"🎵 {title}\n👤 {singer}\n💿 {album}\n🔗 Find this song: https://t.me/mezmurarchive/7484"
 
 # ----------------------------
 # Bible Verse Logic
