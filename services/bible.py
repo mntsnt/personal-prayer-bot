@@ -20,14 +20,14 @@ def _fetch_random_verse(translation=None):
 
 
 def _fetch_chapter(reference):
-    # reference like 'John 3:16' => book='John', chapter='3'
+    # reference like 'Genesis 1' => book='Genesis', chapter='1'
     if not reference:
         raise ValueError('Reference required')
 
     # parse book/chapter from reference
-    # e.g. '1 Chronicles 5:2', 'John 3:16', 'Song of Solomon 2:4'
+    # e.g. 'Genesis 1', 'John 3'
     import re
-    m = re.match(r'^(.+?)\s+(\d+):\d+$', reference)
+    m = re.match(r'^(.+?)\s+(\d+)$', reference)
     if not m:
         raise ValueError(f'Could not parse chapter from reference: {reference}')
 
