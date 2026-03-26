@@ -208,16 +208,16 @@ def main():
     # ----------------------------
     tz = pytz.timezone("Africa/Addis_Ababa")
 
-    # Morning at 6:00 AM
+    # Morning at 11:30 AM
     app.job_queue.run_daily(
         send_morning,
-        time=time(hour=6, minute=0, tzinfo=tz)
+        time=time(hour=11, minute=0, tzinfo=tz)
     )
 
-    # Evening at 6:00 PM
+    # Evening at 9:00 PM
     app.job_queue.run_daily(
         send_evening,
-        time=time(hour=18, minute=0, tzinfo=tz)
+        time=time(hour=21, minute=0, tzinfo=tz)
     )
 
     logging.info("Bot started successfully...")
