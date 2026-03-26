@@ -1,9 +1,11 @@
 import random
+import json
 import requests
 import logging
 import pytz
 
 from datetime import time
+from pathlib import Path
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -12,7 +14,14 @@ from telegram.ext import (
 )
 
 from config import TOKEN, CHAT_ID
-from songs_list import songs
+
+# Load songs list from JSON file
+songs_file = Path('songs_list.json')
+if not songs_file.exists():
+    raise FileNotFoundError('songs_list.json not found; run convert_songs_to_json.py first')
+
+with songs_file.open(encoding='utf-8') as f:
+    songs = json.load(f)
 
 # ----------------------------
 # Logging
@@ -35,7 +44,13 @@ def get_random_song():
         song = random.choice(songs)
 
     last_song = song
-    return f"🎵 {song}"
+
+    title = song.get('title', 'Unknown Title')
+    artist = song.get('artist', 'Unknown')
+    album = song.get('album', 'Unknown')
+    path = song.get('file_path', '')
+
+    return f"🎵 {title}\n👤 {artist}\n💿 {album}\n📁 {path}"
 
 # ----------------------------
 # Bible Verse Logic
