@@ -4,16 +4,31 @@ import requests
 import logging
 import pytz
 
-from datetime import time
+from datetime import time, datetime
 from pathlib import Path
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
+    CallbackQueryHandler,
     ContextTypes
 )
 
 from config import TOKEN, CHAT_ID
+
+# Day count persistence
+DAY_COUNT_FILE = Path('day_count.txt')
+
+def load_day_count():
+    if DAY_COUNT_FILE.exists():
+        try:
+            return int(DAY_COUNT_FILE.read_text().strip())
+        except ValueError:
+            return 0
+    return 0
+
+def save_day_count(count):
+    DAY_COUNT_FILE.write_text(str(count))
 
 # Load songs list from JSON file
 songs_file = Path('songs_list.json')
@@ -62,11 +77,17 @@ from services.bible import get_random_verse
 async def send_morning(context: ContextTypes.DEFAULT_TYPE):
     logging.info("Sending morning message...")
 
+    # Get day and count
+    now = datetime.now(pytz.timezone("Africa/Addis_Ababa"))
+    day_name = now.strftime("%A")
+    day_count = load_day_count() + 1
+    save_day_count(day_count)
+
     verse = get_random_verse()
     song = get_random_song()
 
     message = f"""
-☀️ Good Morning
+☀️ Good Morning, {day_name}! Have a bright day. (Day {day_count})
 
 {verse}
 
@@ -74,16 +95,32 @@ async def send_morning(context: ContextTypes.DEFAULT_TYPE):
 {song}
 """
     await context.bot.send_message(chat_id=CHAT_ID, text=message)
+
+    # Send approval buttons
+    keyboard = [
+        [InlineKeyboardButton("✅ Heard Music", callback_data="music_yes"),
+         InlineKeyboardButton("❌ Didn't Hear", callback_data="music_no")],
+        [InlineKeyboardButton("📖 Read Verse", callback_data="verse_yes"),
+         InlineKeyboardButton("❌ Didn't Read", callback_data="verse_no")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await context.bot.send_message(chat_id=CHAT_ID, text="Did you hear the music and read the verse?", reply_markup=reply_markup)
 
 
 async def send_evening(context: ContextTypes.DEFAULT_TYPE):
     logging.info("Sending evening message...")
 
+    # Get day and count
+    now = datetime.now(pytz.timezone("Africa/Addis_Ababa"))
+    day_name = now.strftime("%A")
+    day_count = load_day_count() + 1
+    save_day_count(day_count)
+
     verse = get_random_verse()
     song = get_random_song()
 
     message = f"""
-🌙 Good Evening
+🌙 Good Evening, {day_name}! Have a good night. (Day {day_count})
 
 {verse}
 
@@ -91,6 +128,16 @@ async def send_evening(context: ContextTypes.DEFAULT_TYPE):
 {song}
 """
     await context.bot.send_message(chat_id=CHAT_ID, text=message)
+
+    # Send approval buttons
+    keyboard = [
+        [InlineKeyboardButton("✅ Heard Music", callback_data="music_yes"),
+         InlineKeyboardButton("❌ Didn't Hear", callback_data="music_no")],
+        [InlineKeyboardButton("📖 Read Verse", callback_data="verse_yes"),
+         InlineKeyboardButton("❌ Didn't Read", callback_data="verse_no")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await context.bot.send_message(chat_id=CHAT_ID, text="Did you hear the music and read the verse?", reply_markup=reply_markup)
 
 # ----------------------------
 # Commands
@@ -105,6 +152,27 @@ async def song_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_random_song())
 
 # ----------------------------
+# Callback Handler for Buttons
+# ----------------------------
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+    if data == "music_yes":
+        response = "Great! Glad you heard the music. 🎵"
+    elif data == "music_no":
+        response = "No worries, try listening later. 🎵"
+    elif data == "verse_yes":
+        response = "Wonderful! Keep reading the Word. 📖"
+    elif data == "verse_no":
+        response = "That's okay, take your time with the verse. 📖"
+    else:
+        response = "Unknown action."
+
+    await query.edit_message_text(text=response)
+
+# ----------------------------
 # Main App
 # ----------------------------
 def main():
@@ -114,6 +182,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("verse", verse_command))
     app.add_handler(CommandHandler("song", song_command))
+    app.add_handler(CallbackQueryHandler(button_callback))
 
     # ----------------------------
     # Scheduler (Addis Ababa Timezone)
