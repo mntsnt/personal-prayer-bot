@@ -1,7 +1,10 @@
 import requests
 
 
-def _fetch_verse(translation=None):
+from urllib.parse import quote_plus
+
+
+def _fetch_random_verse(translation=None):
     url = "https://bible-api.com/?random=verse"
     if translation:
         url += f"&translation={translation}"
@@ -16,19 +19,58 @@ def _fetch_verse(translation=None):
     }
 
 
+def _fetch_chapter(reference, translation=None):
+    # reference like 'John 3:16' => book='John', chapter='3'
+    if not reference:
+        raise ValueError('Reference required')
+
+    # parse book/chapter from reference
+    # e.g. '1 Chronicles 5:2', 'John 3:16', 'Song of Solomon 2:4'
+    import re
+    m = re.match(r'^(.+?)\s+(\d+):\d+$', reference)
+    if not m:
+        raise ValueError(f'Could not parse chapter from reference: {reference}')
+
+    book = m.group(1).strip()
+    chapter = m.group(2).strip()
+
+    book_chapter = f"{book} {chapter}"
+    url = f"https://bible-api.com/{quote_plus(book_chapter)}"
+    if translation:
+        url += f"?translation={translation}"
+
+    res = requests.get(url, timeout=10)
+    res.raise_for_status()
+    data = res.json()
+
+    text = data.get('text') or ''
+    return {
+        'reference': book_chapter,
+        'text': text.strip()
+    }
+
+
 def get_random_verse():
     try:
-        english = _fetch_verse()
+        random_verse = _fetch_random_verse()
     except Exception:
-        return "📖 Unable to fetch verse right now."
+        return "📖 Unable to fetch chapter right now."
+
+    reference = random_verse.get('reference')
+    if not reference:
+        return "📖 Unable to fetch chapter right now."
+
+    try:
+        english = _fetch_chapter(reference)
+    except Exception:
+        return "📖 Unable to fetch chapter right now."
 
     amharic = None
     try:
-        amharic = _fetch_verse(translation='am')
+        amharic = _fetch_chapter(reference, translation='am')
     except Exception:
         amharic = None
 
-    reference = english.get('reference', 'Unknown Reference')
     eng_text = english.get('text', '')
     am_text = amharic.get('text', '') if amharic and amharic.get('text') else None
 
