@@ -19,6 +19,9 @@ def _fetch_random_verse(translation=None):
     }
 
 
+AMHARIC_BIBLE_API = 'https://api.amharicbible.org/chapter'  # example; replace with your real API endpoint
+
+
 def _fetch_chapter(reference, translation=None):
     # reference like 'John 3:16' => book='John', chapter='3'
     if not reference:
@@ -35,9 +38,29 @@ def _fetch_chapter(reference, translation=None):
     chapter = m.group(2).strip()
 
     book_chapter = f"{book} {chapter}"
-    url = f"https://bible-api.com/{quote_plus(book_chapter)}"
-    if translation:
-        url += f"?translation={translation}"
+
+    if translation == 'am':
+        # Use dedicated Amharic Bible API if available
+        # expected response shape: { 'reference': '...', 'text': '...' }
+        # Falls back to bible-api.com translation=am if custom endpoint fails.
+        params = {
+            'book': book,
+            'chapter': chapter,
+            'translation': 'am'
+        }
+        try:
+            res = requests.get(AMHARIC_BIBLE_API, params=params, timeout=10)
+            res.raise_for_status()
+            data = res.json()
+            text = data.get('text') or ''
+            return {'reference': book_chapter, 'text': text.strip()}
+        except Exception:
+            pass
+
+        # fallback to bible-api.com
+        url = f"https://bible-api.com/{quote_plus(book_chapter)}?translation=am"
+    else:
+        url = f"https://bible-api.com/{quote_plus(book_chapter)}"
 
     res = requests.get(url, timeout=10)
     res.raise_for_status()
