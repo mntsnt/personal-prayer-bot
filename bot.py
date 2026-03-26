@@ -127,7 +127,7 @@ def main():
     # Evening at 6:00 PM
     app.job_queue.run_daily(
         send_evening,
-        time=time(hour=21, minute=30, tzinfo=tz)
+        time=time(hour=21, minute=0, tzinfo=tz)
     )
 
     logging.info("Bot started successfully...")
