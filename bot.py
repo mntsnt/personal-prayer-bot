@@ -55,19 +55,7 @@ def get_random_song():
 # ----------------------------
 # Bible Verse Logic
 # ----------------------------
-def get_random_verse():
-    try:
-        res = requests.get("https://bible-api.com/?random=verse")
-        data = res.json()
-
-        verse = data["text"].strip()
-        reference = data["reference"]
-
-        return f"📖 {reference}\n{verse}"
-
-    except Exception as e:
-        logging.error(f"Verse fetch error: {e}")
-        return "📖 Unable to fetch verse right now."
+from services.bible import get_random_verse
 
 # ----------------------------
 # Daily Message Function
