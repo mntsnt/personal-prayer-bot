@@ -60,8 +60,11 @@ async def song_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Scheduler (Morning & Evening)
 # ----------------------------
 scheduler = BackgroundScheduler()
-scheduler.add_job(send_daily, 'cron', hour=6)   # morning
-scheduler.add_job(send_daily, 'cron', hour=18)  # evening
+# scheduler.add_job(send_daily, 'cron', hour=6)   # morning
+# scheduler.add_job(send_daily, 'cron', hour=18)  # evening
+
+scheduler.add_job(send_daily, 'interval', minutes=1)
+
 scheduler.start()
 
 send_daily()
@@ -74,3 +77,6 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("verse", verse_command))
 app.add_handler(CommandHandler("song", song_command))
 app.run_polling()
+
+
+scheduler.add_job(send_daily, 'interval', minutes=1)
