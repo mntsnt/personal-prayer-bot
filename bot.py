@@ -18,17 +18,38 @@ from config import TOKEN, CHAT_ID
 
 # Day count persistence
 DAY_COUNT_FILE = Path('day_count.txt')
+LAST_DATE_FILE = Path('last_date.txt')
 
 def load_day_count():
     if DAY_COUNT_FILE.exists():
         try:
             return int(DAY_COUNT_FILE.read_text().strip())
         except ValueError:
-            return 0
-    return 0
+            return 1
+    return 1
 
 def save_day_count(count):
     DAY_COUNT_FILE.write_text(str(count))
+
+def get_current_day():
+    now = datetime.now(pytz.timezone("Africa/Addis_Ababa"))
+    current_date = now.date()
+    
+    if LAST_DATE_FILE.exists():
+        last_date_str = LAST_DATE_FILE.read_text().strip()
+        last_date = datetime.fromisoformat(last_date_str).date()
+        if current_date > last_date:
+            day_count = load_day_count() + 1
+            save_day_count(day_count)
+            LAST_DATE_FILE.write_text(current_date.isoformat())
+        else:
+            day_count = load_day_count()
+    else:
+        day_count = 1
+        save_day_count(1)
+        LAST_DATE_FILE.write_text(current_date.isoformat())
+    
+    return day_count
 
 # Load songs list from JSON file
 songs_file = Path('songs_list.json')
@@ -80,8 +101,7 @@ async def send_morning(context: ContextTypes.DEFAULT_TYPE):
     # Get day and count
     now = datetime.now(pytz.timezone("Africa/Addis_Ababa"))
     day_name = now.strftime("%A")
-    day_count = load_day_count() + 1
-    save_day_count(day_count)
+    day_count = get_current_day()
 
     verse = get_random_verse()
     song = get_random_song()
@@ -113,8 +133,7 @@ async def send_evening(context: ContextTypes.DEFAULT_TYPE):
     # Get day and count
     now = datetime.now(pytz.timezone("Africa/Addis_Ababa"))
     day_name = now.strftime("%A")
-    day_count = load_day_count() + 1
-    save_day_count(day_count)
+    day_count = get_current_day()
 
     verse = get_random_verse()
     song = get_random_song()
