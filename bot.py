@@ -36,7 +36,14 @@ def get_random_verse():
 # ----------------------------
 # Daily Message
 # ----------------------------
+# def send_daily():
+#     verse = get_random_verse()
+#     song = get_random_song()
+#     message = f"☀️ Daily Message\n\n{verse}\n\n{song}"
+#     bot.send_message(chat_id=CHAT_ID, text=message)
+
 def send_daily():
+    print("Scheduler is running...")  # 👈 Add this
     verse = get_random_verse()
     song = get_random_song()
     message = f"☀️ Daily Message\n\n{verse}\n\n{song}"
