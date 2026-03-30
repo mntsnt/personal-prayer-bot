@@ -211,7 +211,7 @@ def main():
     # Morning at 11:30 AM
     app.job_queue.run_daily(
         send_morning,
-        time=time(hour=11, minute=0, tzinfo=tz)
+        time=time(hour=5, minute=0, tzinfo=tz)
     )
 
     # Evening at 9:00 PM
